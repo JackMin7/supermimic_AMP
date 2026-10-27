@@ -246,21 +246,38 @@ def run_play(task_id: str, cfg: PlayConfig):
 
       policy = PolicyRandom()
   else:
-    runner_cls = load_runner_cls(task_id) or MjlabOnPolicyRunner
-    runner = runner_cls(env, asdict(agent_cfg), device=device)
-    runner.load(str(resume_path), load_optimizer=False)
-    policy = runner.get_inference_policy(device=device)
+    checkpoint_metadata = torch.load(resume_path, map_location="cpu", weights_only=False)
+    is_supermimic = "p4_critic" in checkpoint_metadata and "world_model" in checkpoint_metadata
+    del checkpoint_metadata
+    if is_supermimic:
+      from supermimic.evaluation.ppo import load_policy
+      actor_critic, normalizer = load_policy(resume_path, device)
+      torch.set_float32_matmul_precision("highest")
 
-    if cfg.export_onnx:
-      safe_task_name = task_id.replace("/", "_").replace(":", "_")
-      checkpoint_stem = resume_path.stem if resume_path is not None else "policy"
-      export_root = log_dir if log_dir is not None else Path("logs")
-      onnx_path = (export_root / "export" / f"{safe_task_name}_{checkpoint_stem}.onnx").resolve()
-      try:
-        export_runner_policy_to_onnx(runner, onnx_path)
-        print(f"[INFO]: Exported ONNX policy to: {onnx_path}")
-      except Exception as exc:
-        print(f"[WARN]: Failed to export ONNX policy: {exc}")
+      def policy(obs):
+        if hasattr(obs, "keys"):
+          obs = obs["actor" if "actor" in obs.keys() else "policy"]
+        return actor_critic.act_inference(normalizer(obs))
+
+      print(f"[INFO]: SuperMimic preview: {resume_path}", flush=True)
+      if cfg.export_onnx:
+        print("[INFO]: SuperMimic preview skips PPO runner ONNX export")
+    else:
+      runner_cls = load_runner_cls(task_id) or MjlabOnPolicyRunner
+      runner = runner_cls(env, asdict(agent_cfg), device=device)
+      runner.load(str(resume_path), load_optimizer=False)
+      policy = runner.get_inference_policy(device=device)
+
+      if cfg.export_onnx:
+        safe_task_name = task_id.replace("/", "_").replace(":", "_")
+        checkpoint_stem = resume_path.stem if resume_path is not None else "policy"
+        export_root = log_dir if log_dir is not None else Path("logs")
+        onnx_path = (export_root / "export" / f"{safe_task_name}_{checkpoint_stem}.onnx").resolve()
+        try:
+          export_runner_policy_to_onnx(runner, onnx_path)
+          print(f"[INFO]: Exported ONNX policy to: {onnx_path}")
+        except Exception as exc:
+          print(f"[WARN]: Failed to export ONNX policy: {exc}")
   if DUMMY_MODE and cfg.export_onnx:
     print("[WARN]: ONNX export is only available for trained agents.")
 

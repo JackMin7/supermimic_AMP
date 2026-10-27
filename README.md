@@ -141,3 +141,12 @@ If valid NPZ files exist in these folders, training config loads them automatica
 
 - Thanks to [unitreerobotics/unitree_rl_mjlab](https://github.com/unitreerobotics/unitree_rl_mjlab) for open-sourcing their work and inspiration.
 - Thanks to [Open-X-Humanoid/TienKung-Lab](https://github.com/Open-X-Humanoid/TienKung-Lab); the rsl_rl AMP part in this project references their implementation.
+
+
+### SuperMimic
+
+The training entry point now defaults to WMRL (SuperMimic); the PPO training branch has been removed. `--backend wmrl` is optional, and `--backend supermimic` remains a compatibility alias. WMRL currently supports G1 AMP Flat on one CUDA GPU. Existing PPO checkpoints remain usable for initialization and evaluation. See [training and resume options](supermimic/PERFORMANCE.md).
+
+```bash
+python scripts/train.py Unitree-G1-AMP-Flat --env.scene.num-envs=4096 --agent.max-iterations=14000
+```

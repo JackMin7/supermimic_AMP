@@ -13,7 +13,7 @@ INSTALL_REQUIRES = [
 # Installation operation
 setup(
     name="wbc_mjlab",
-    packages=["src"],
+    packages=["src", *find_packages(include=["supermimic", "supermimic.*"])],
     version="0.0.1",
     install_requires=INSTALL_REQUIRES,
 )

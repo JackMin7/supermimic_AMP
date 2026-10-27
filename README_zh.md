@@ -145,3 +145,12 @@ python scripts/csv_to_npz.py --help
 
 - 感谢 [unitreerobotics/unitree_rl_mjlab](https://github.com/unitreerobotics/unitree_rl_mjlab) 项目的开源工作与启发。
 - 感谢 [Open-X-Humanoid/TienKung-Lab](https://github.com/Open-X-Humanoid/TienKung-Lab)，本项目在 rsl_rl 的 AMP 部分参考了该实现。
+
+
+### SuperMimic
+
+训练入口现在默认 WMRL（SuperMimic），已移除 PPO 训练分支。可省略 `--backend wmrl`；旧的 `--backend supermimic` 作为兼容别名保留。目前支持 G1 AMP Flat、单 CUDA GPU。已有 PPO 检查点仍可用于初始化和评估。详见[训练及续训说明](supermimic/PERFORMANCE.md)。
+
+```bash
+python scripts/train.py Unitree-G1-AMP-Flat --env.scene.num-envs=4096 --agent.max-iterations=14000
+```
